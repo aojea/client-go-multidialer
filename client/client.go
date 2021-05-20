@@ -9,9 +9,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// NewClient creates a resilient client-go that, in case of connection failures,
+// NewForConfig creates a resilient client-go that, in case of connection failures,
 // tries to connect to all the available apiservers in the cluster.
-func NewClient(ctx context.Context, config *rest.Config) (*kubernetes.Clientset, error) {
+func NewForConfig(ctx context.Context, config *rest.Config) (*kubernetes.Clientset, error) {
 	// create the clientset
 	configShallowCopy := *config
 	// it wraps the custom dialer if exists
