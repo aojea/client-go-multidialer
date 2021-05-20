@@ -1,7 +1,9 @@
-package multidialer
+package client
 
 import (
 	"context"
+
+	"github.com/aojea/client-go-multidialer/multidialer"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -12,10 +14,10 @@ import (
 func NewClient(ctx context.Context, config *rest.Config) (*kubernetes.Clientset, error) {
 	// create the clientset
 	configShallowCopy := *config
-	d := NewDialer()
+	d := multidialer.NewDialer()
 	// wrap the custom dialer if exist
 	if configShallowCopy.Dial != nil {
-		d.dial = configShallowCopy.Dial
+		d.DialFunc = configShallowCopy.Dial
 	}
 	// use the multidialier for our clientset
 	configShallowCopy.Dial = d.DialContext
