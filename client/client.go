@@ -14,18 +14,17 @@ import (
 func NewClient(ctx context.Context, config *rest.Config) (*kubernetes.Clientset, error) {
 	// create the clientset
 	configShallowCopy := *config
-	d := multidialer.NewDialer()
-	// wrap the custom dialer if exist
-	if configShallowCopy.Dial != nil {
-		d.DialFunc = configShallowCopy.Dial
-	}
+	// it wraps the custom dialer if exists
+	d := multidialer.NewDialer(configShallowCopy.Dial)
 	// use the multidialier for our clientset
 	configShallowCopy.Dial = d.DialContext
+	// create the clientset with our own dialer
 	cs, err := kubernetes.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return cs, err
 	}
 	// start the resolver to update the list of available apiservers
+	// !!! using our own dialer !!!
 	d.Start(ctx, cs)
 	return cs, nil
 }

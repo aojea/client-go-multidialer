@@ -25,16 +25,16 @@ type DialFunc func(ctx context.Context, network, address string) (net.Conn, erro
 // Dialer opens connections through Dial.
 // It iterates over a list of hosts that can be updated externally until it succeeds.
 type Dialer struct {
-	DialFunc DialFunc
+	dial     DialFunc
 	resolver *resolver
 }
 
 // NewDialer creates a new Dialer instance.
-func NewDialer() *Dialer {
-	return NewDialerWithAlternateHosts(
-		(&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
-		[]string{},
-	)
+func NewDialer(dial DialFunc) *Dialer {
+	if dial == nil {
+		dial = (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext
+	}
+	return NewDialerWithAlternateHosts(dial, []string{})
 }
 
 // NewDialerWithAlternateHosts creates a new Dialer instance.
@@ -43,7 +43,7 @@ func NewDialer() *Dialer {
 // If alternateHosts is not nil, it will be used to retry failed connections.
 func NewDialerWithAlternateHosts(dial DialFunc, alternateHosts []string) *Dialer {
 	return &Dialer{
-		DialFunc: dial,
+		dial:     dial,
 		resolver: NewResolver(alternateHosts),
 	}
 }
@@ -56,7 +56,7 @@ func (d *Dialer) Dial(network, address string) (net.Conn, error) {
 // DialContext creates a new connection trying to connect serially over the list of ready hosts in the pool
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	for _, host := range d.resolver.listReady() {
-		conn, err := d.DialFunc(ctx, network, host)
+		conn, err := d.dial(ctx, network, host)
 		if err == nil {
 			// connection working, record the host
 			// so we can use it the next time
@@ -65,7 +65,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 		}
 
 	}
-	return d.DialFunc(ctx, network, address)
+	return d.dial(ctx, network, address)
 }
 
 func (d *Dialer) Start(ctx context.Context, clientset kubernetes.Interface) {
