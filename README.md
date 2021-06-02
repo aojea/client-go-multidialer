@@ -26,14 +26,21 @@ It provides a custom dialer to the client-go client, it also wraps the actual di
 The custom dialer implement the following logic:
 
 1. Connects to the provided endpoint
-2. Spawn a go routine that queries the apiserver to the get current available endpoints, this are available under the special endpoint object "kubernetes" on the "default" namespace
+2. Spawn a go routine that queries the apiserver to the get current available endpoints, these are available under the special endpoint object "kubernetes" on the "default" namespace
 3. When the http transport in client-go ask for a connection to the dialer:
-3.1 tries to connect to the last working apiserver endpoint, if it fails
-3.2 tries to connect to the other endpoints, if it succeeds returns the connection and store the endpoint as the one to be used next time
-3.3 if none of the endpoints work, it falls back to the initial configured endpoint
+	- tries to connect to the last working apiserver endpoint, if it fails
+	- tries to connect to the other endpoints, if it succeeds returns the connection and store the endpoint as the one to be used next time
+	- if none of the endpoints work, it falls back to the initial configured endpoint
 
 The fact that it gathers the apiserver endpoints periodically allows to change the apiserver IPs, shrink or grow the cluster.
 
+## Implementation
+
+The implementation is composed of:
+
+- a [client-go constructor](./client/client.go): It returns a client-go object with the multidialer
+- a [custom dialer](./multidialer/multidialer.go): Implements the multiple dialer logic, uses a resolver to get a list of available apiservers.
+- an [apiserver resolver](./multidialer/resolver.go): Implements the apiserver endpoints resolvers
 
 ## Examples
  
